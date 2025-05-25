@@ -181,17 +181,18 @@ if __name__ == "__main__":
 ### Cortex COMPLETE Multimodalによる画像処理
 Streamlitからユーザーの入力を受け取り、`COMPLETE`に与えて処理を実行します(単一画像の場合)。モデルは`calude-3-5-sonnet`を使います。
 ```
-user_prompt = st.text_area("プロンプトを入力してください", "100文字程度で洞察をまとめてください。")
+user_prompt = st.text_area("プロンプトを入力してください", "100文字程度でキャプションを生成してください。")
 if st.button("実行", key="single_image"):
     try:
-        result = session.sql(f"""
-            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
-            '{user_prompt}',
-            TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(tmp_file_path)}'));
-        """
-        ).collect()
-        st.subheader("結果")
-        st.write(result[0][0])
+        with st.spinner("処理中..."):
+            result = session.sql(f"""
+                SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                '{user_prompt}',
+                TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(tmp_file_path)}'));
+            """
+            ).collect()
+            st.subheader("結果")
+            st.write(result[0][0])
     except Exception as e:
         st.error(f"処理中にエラーが発生しました: {e}")
 ```
@@ -200,15 +201,16 @@ COMPLETEの実行する(複数(2枚)画像の場合)
 user_prompt = st.text_area("プロンプトを入力してください", "2つの画像の違いを説明してください。")
 if st.button("実行", key="multiple_images"):
     try:
-        result = session.sql(f"""
-            SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
-            PROMPT('2つの画像 {{0}} と {{1}} に対し、ユーザーの指示に従って処理してください。指示は次の通りです: {user_prompt}',
-            TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[0])}'),
-            TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[1])}')));
-        """
-        ).collect()
-        st.subheader("結果")
-        st.write(result[0][0])
+        with st.spinner("処理中..."):
+            result = session.sql(f"""
+                SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                PROMPT('2つの画像 {{0}} と {{1}} に対し、ユーザーの指示に従って処理してください。指示は次の通りです: {user_prompt}',
+                TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[0])}'),
+                TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[1])}')));
+            """
+            ).collect()
+            st.subheader("結果")
+            st.write(result[0][0])
     except Exception as e:
         st.error(f"処理中にエラーが発生しました: {e}")
 ```
