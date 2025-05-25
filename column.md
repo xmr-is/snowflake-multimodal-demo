@@ -20,6 +20,7 @@ Snowflakeの内部・外部ステージに画像をアップロードするこ�
 | ファイル名拡張子 | `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` |
 | ステージ暗号化   | サーバー側の暗号化                     |
 | データ型        | ファイル                          |
+
 ※執筆時点(2025/05/26)では、`pixtral-large`のみ、追加で`.bmp`に対応しています。
 
 ### 使い方
@@ -38,15 +39,16 @@ CREATE OR REPLACE STAGE input_stage
     AWS_SECRET_KEY=<aws_secret_key>)
     ENCRYPTION=( TYPE = 'AWS_SSE_S3' );
 ```
-#### 単一画像に対してタスクを実行する場合
+#### Cortex COMPLETE Multimodalを実行する
+[単一画像に対してタスクを実行する場合]
 ```
 SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
     'Summarize the insights from this pie chart in 100 words',
     TO_FILE('@myimages', 'science-employment-slide.jpeg'));
 ```
 
-#### 複数画像に対してタスクを実行する場合
-※執筆時点(2025/05/26)では、複数画像処理に対応しているのは`claude-3-5-sonnet`のみです。
+[複数画像に対してタスクを実行する場合]
+
 ```
 SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
     PROMPT('Compare this image {0} to this image {1} and describe the ideal audience for each in two concise bullets no longer than 10 words',
@@ -54,13 +56,15 @@ SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
     TO_FILE('@myimages', 'adcreative_2.png')
 ));
 ```
+※執筆時点(2025/05/26)では、複数画像処理に対応しているのは`claude-3-5-sonnet`のみです。
 
 ### リージョン
-執筆時点(2025/05/26)ではAWSの一部リージョンのみ利用できます。
 | 関数（モデル）           | AWS 米国西部 2（オレゴン） | AWS 米国東部 1（バージニア州北部） | AWS ヨーロッパ セントラル 1（フランクフルト） |
 |--------------------------|-----------------------------|-------------------------------------|------------------------------------------------|
 | 完了<br>(claude-3-5-sonnet)  | ✓                           | ✓                                   |                                                |
 | 完了<br>(pixtral-large)     | ✓                           | ✓                                   | ✓                                              |
+
+※執筆時点(2025/05/26)ではAWSの一部リージョンのみ利用できます。
 
 https://docs.snowflake.com/en/user-guide/snowflake-cortex/complete-multimodal
 
