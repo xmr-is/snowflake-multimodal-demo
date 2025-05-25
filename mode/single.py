@@ -37,9 +37,10 @@ def single_image():
             OVERWRITE=TRUE
         """
         try:
-            result = session.sql(put_sql).collect()
-            st.success(f"{file_name} を input_stage にアップロードしました。")
-            st.session_state.upload_success = True
+            with st.spinner("処理中..."):
+                result = session.sql(put_sql).collect()
+                st.success(f"{file_name} を Stage にアップロードしました。")
+                st.session_state.upload_success = True
         except Exception as e:
             st.error(f"アップロードに失敗しました: {e}")
             st.session_state.upload_success = False
@@ -47,16 +48,17 @@ def single_image():
             os.remove(tmp_file_path)  # 一時ファイル削除
         
     if st.session_state.upload_success:
-        user_prompt = st.text_area("プロンプトを入力してください", "100文字程度で洞察をまとめてください。")
+        user_prompt = st.text_area("プロンプトを入力してください", "100文字程度でキャプションを生成してください。")
         if st.button("実行", key="single_image"):
             try:
-                result = session.sql(f"""
-                    SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
-                    '{user_prompt}',
-                    TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(tmp_file_path)}'));
-                """
-                ).collect()
-                st.subheader("結果")
-                st.write(result[0][0])
+                with st.spinner("処理中..."):
+                    result = session.sql(f"""
+                        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                        '{user_prompt}',
+                        TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(tmp_file_path)}'));
+                    """
+                    ).collect()
+                    st.subheader("結果")
+                    st.write(result[0][0])
             except Exception as e:
                 st.error(f"処理中にエラーが発生しました: {e}")

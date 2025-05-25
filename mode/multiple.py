@@ -1,4 +1,5 @@
 import os
+import time
 import tempfile
 import streamlit as st
 from dotenv import load_dotenv
@@ -38,9 +39,10 @@ def multiple_images():
                 OVERWRITE=TRUE
             """
             try:
-                result = session.sql(put_sql).collect()
-                st.success(f"{file_name} を Stage にアップロードしました。")
-                st.session_state.upload_success = True
+                with st.spinner("処理中..."):
+                    result = session.sql(put_sql).collect()
+                    st.success(f"{file_name} を Stage にアップロードしました。")
+                    st.session_state.upload_success = True
             except Exception as e:
                 st.error(f"アップロードに失敗しました: {e}")
                 st.session_state.upload_success = False
@@ -50,18 +52,19 @@ def multiple_images():
         if st.session_state.upload_success:
             user_prompt = st.text_area("プロンプトを入力してください", "2つの画像の違いを説明してください。")
             if st.button("実行", key="multiple_images"):
-                try:
-                    result = session.sql(f"""
-                        SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
-                        PROMPT('2つの画像 {{0}} と {{1}} に対し、ユーザーの指示に従って処理してください。指示は次の通りです: {user_prompt}',
-                        TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[0])}'),
-                        TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[1])}')));
-                    """
-                    ).collect()
-                    st.subheader("結果")
-                    st.write(result[0][0])
-                except Exception as e:
-                    st.error(f"処理中にエラーが発生しました: {e}")
+                    try:
+                        with st.spinner("処理中..."):
+                            result = session.sql(f"""
+                                SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
+                                PROMPT('2つの画像 {{0}} と {{1}} に対し、ユーザーの指示に従って処理してください。指示は次の通りです: {user_prompt}',
+                                TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[0])}'),
+                                TO_FILE('@{os.environ["SNOWFLAKE_STAGE"]}', '{os.path.basename(file_path[1])}')));
+                            """
+                            ).collect()
+                            st.subheader("結果")
+                            st.write(result[0][0])
+                    except Exception as e:
+                        st.error(f"処理中にエラーが発生しました: {e}")
     elif uploaded_files:
         st.warning("2つの画像ファイルをアップロードしてください。")
     
