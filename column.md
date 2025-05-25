@@ -9,20 +9,21 @@ Snowflakeでは生成AIの機能群としてCortex AIを提供しており、そ
 ## Cortex COMPLETE Multimodalとは
 ユーザーからの画像とプロンプト入力に対して、言語モデルを用いて応答を生成できる機能のことです。
 Snowflakeの内部・外部ステージに画像をアップロードすることで、単一・複数の画像を処理し結果を返すことが可能になります。
+
+### モデル
+`claude-3-5-sonnet`と`pixtral-large`が利用可能です。
+トークン数や取り扱えるファイルの種類などに違いがあります。
+
 ### 入力要件
 | 要件             | 値                                   |
 |------------------|----------------------------------------|
 | ファイル名拡張子 | `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif` |
 | ステージ暗号化   | サーバー側の暗号化                     |
 | データ型        | ファイル                          |
-
-### モデル
-`claude-3-5-sonnet`と`pixtral-large`が利用可能です。
-トークン数や取り扱えるファイルの種類などに違いがあります。
+※執筆時点(2025/05/26)では、`pixtral-large`のみ、追加で`.bmp`に対応しています。
 
 ### 使い方
-画像を保存するためのステージを作成します。
-
+#### 画像を保存するためのステージを作成します。
 [内部ステージの場合]
 ```
 CREATE OR REPLACE STAGE input_stage
@@ -37,14 +38,15 @@ CREATE OR REPLACE STAGE input_stage
     AWS_SECRET_KEY=<aws_secret_key>)
     ENCRYPTION=( TYPE = 'AWS_SSE_S3' );
 ```
-単一画像に対してタスクを実行する場合
+#### 単一画像に対してタスクを実行する場合
 ```
 SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
     'Summarize the insights from this pie chart in 100 words',
     TO_FILE('@myimages', 'science-employment-slide.jpeg'));
 ```
 
-複数画像に対してタスクを実行する場合
+#### 複数画像に対してタスクを実行する場合
+※執筆時点(2025/05/26)では、複数画像処理に対応しているのは`claude-3-5-sonnet`のみです。
 ```
 SELECT SNOWFLAKE.CORTEX.COMPLETE('claude-3-5-sonnet',
     PROMPT('Compare this image {0} to this image {1} and describe the ideal audience for each in two concise bullets no longer than 10 words',
@@ -124,7 +126,7 @@ def init_snowflake_object(session):
     for sql in sql_statements:
         session.sql(sql).collect()
 ```
-`PUT`コマンドを使って、前手順で作成した内部ステージへファイルアップロードします。
+`PUT`コマンドを使って、前手順で作成した内部ステージへファイルをアップロードします。
 ```
 put_sql = f"""
     PUT 'file://{tmp_file_path}'
@@ -179,7 +181,7 @@ if __name__ == "__main__":
 ```
 
 ### Cortex COMPLETE Multimodalによる画像処理
-Streamlitからユーザーの入力を受け取り、`COMPLETE`に与えて処理を実行します(単一画像の場合)。モデルは`calude-3-5-sonnet`を使います。
+単一画像の場合：Streamlitからユーザーの入力を受け取り、`COMPLETE`に与えて処理を実行します。モデルは`calude-3-5-sonnet`を使います。
 ```
 user_prompt = st.text_area("プロンプトを入力してください", "100文字程度でキャプションを生成してください。")
 if st.button("実行", key="single_image"):
@@ -196,7 +198,7 @@ if st.button("実行", key="single_image"):
     except Exception as e:
         st.error(f"処理中にエラーが発生しました: {e}")
 ```
-COMPLETEの実行する(複数(2枚)画像の場合)
+複数画像(2枚)の場合：アップロードしたファイルの情報をリストで保持しているので、それぞれ`TO_FILE`に引数として与えます。
 ```
 user_prompt = st.text_area("プロンプトを入力してください", "2つの画像の違いを説明してください。")
 if st.button("実行", key="multiple_images"):
